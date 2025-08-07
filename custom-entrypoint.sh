@@ -1,67 +1,39 @@
 #!/bin/bash
 set -m
 
-export DISPLAY=:0
 MASKED_PASSWORD=$(printf '***%.0s' $(seq ${#BROADEARN_PASSWORD}))
 
 echo " "
 echo "=== === === === === === === ==="
-echo "Starting GUI environment ..."
+echo "Executing custom entrypoint ..."
 echo "=== === === === === === === ==="
 echo " "
 
-# 1. Start virtual X server
-Xvfb :0 -screen 0 1280x720x24 &
-sleep 2
-
-# 2. Start window manager
-fluxbox &
-sleep 2
-
-# 3. Setup VNC password if VNC_PASS is set
-if [ -n "$VNC_PASS" ]; then
-  mkdir -p /root/.vnc
-  x11vnc -storepasswd "$VNC_PASS" /root/.vnc/passwd
-  VNC_AUTH="-rfbauth /root/.vnc/passwd"
-else
-  VNC_AUTH="-nopw"
-fi
-
-# 4. Start VNC server
-x11vnc -display :0 $VNC_AUTH -forever -shared -rfbport ${VNC_PORT:-5900} &
-sleep 2
-
-# 5. Start noVNC
-/web/novnc/utils/novnc_proxy --vnc localhost:${VNC_PORT:-5900} --listen ${NOVNC_PORT:-6080} &
-sleep 2
-
-# 6. D-Bus & Gnome Keyring
+# Launch dbus and keyring
 eval "$(dbus-launch --sh-syntax)"
 echo "$BROADEARN_PASSWORD" | gnome-keyring-daemon --unlock --replace
 
-echo " "
-echo "=== === === === ==="
-echo "Starting BroadEarn..."
-echo "=== === === === ==="
-echo " "
-
-/opt/BroadEarn/broadearn --no-sandbox &
-sleep 8
-
 setup_broadearn() {
+  sleep 5
   FLAG_FILE="/root/.config/broadearn.setup_done"
 
   if [ -f "$FLAG_FILE" ]; then
+    echo " "
     echo "=== BroadEarn setup already done; skipping ==="
+    echo " "
     return 0
   fi
 
   if [ -z "$BROADEARN_EMAIL" ] || [ -z "$BROADEARN_PASSWORD" ]; then
-    echo "=== BROADEARN_EMAIL or BROADEARN_PASSWORD missing ==="
+    echo " "
+    echo "=== BROADEARN_EMAIL or BROADEARN_PASSWORD is missing ==="
+    echo " "
     return 0
   fi
 
-  echo "=== Found login details. Attempting login... ==="
+  echo " "
+  echo "=== Found login details. Starting login... ==="
+  echo " "
 
   local BROADEARN_WIN=""
   local attempts=0
@@ -76,14 +48,15 @@ setup_broadearn() {
   done
 
   if [ -z "$BROADEARN_WIN" ]; then
-    echo "=== BroadEarn window not found. Exiting. ==="
+    echo " "
+    echo "=== BroadEarn window not found after waiting. Exiting. ==="
+    echo " "
     return 0
   fi
 
   wmctrl -ia "$BROADEARN_WIN"
   sleep 6
 
-  # Gõ login
   xte "key Tab"; sleep 3
   echo "=== Typing EMAIL: $BROADEARN_EMAIL ==="
   xte "str $BROADEARN_EMAIL"; sleep 3
@@ -97,11 +70,11 @@ setup_broadearn() {
   xte "key Tab"; sleep 3
   xte "key Return"; sleep 5
 
-  # Gửi ảnh về Discord nếu webhook hợp lệ
+  # Screenshot to Discord (optional)
   if [[ -n "$DISCORD_WEBHOOK_URL" && "$DISCORD_WEBHOOK_URL" =~ ^https://discord\.com/api/webhooks/ ]]; then
     SCREENSHOT_PATH="/tmp/broadearn_login.png"
     HOSTNAME="$(hostname)"
-    scrot -o "$SCREENSHOT_PATH"
+    scrot -o -D "$DISPLAY" "$SCREENSHOT_PATH"
     curl -s -o /dev/null -X POST "$DISCORD_WEBHOOK_URL" \
       -F "file=@$SCREENSHOT_PATH" \
       -F "payload_json={\"embeds\": [{\"title\": \"BroadEarn login on host: $HOSTNAME\", \"color\": 5814783}]}"
@@ -113,7 +86,10 @@ setup_broadearn() {
   echo "=== BroadEarn setup complete ==="
   mkdir -p "$(dirname "$FLAG_FILE")"
   touch "$FLAG_FILE"
+  return 0
 }
 
+echo "=== Starting BroadEarn... ==="
+/opt/BroadEarn/broadearn --no-sandbox > /dev/null 2>&1 &
+sleep 8
 setup_broadearn
-wait

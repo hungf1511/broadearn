@@ -12,13 +12,13 @@ echo " "
 eval "$(dbus-launch --sh-syntax)"
 echo "$BROADEARN_PASSWORD" | gnome-keyring-daemon --unlock --replace
 
-setup_wipter() {
+setup_broadearn() {
   sleep 5
-  FLAG_FILE="/root/.config/wipter.setup_done"
+  FLAG_FILE="/root/.config/broadearn.setup_done"
 
   if [ -f "$FLAG_FILE" ]; then
     echo " "
-    echo "=== Wipter setup already done; skipping ==="
+    echo "=== Broadearn setup already done; skipping ==="
     echo " "
     return 0
   fi
@@ -86,12 +86,12 @@ setup_wipter() {
 
   # Đóng cửa sổ Wipter
   wmctrl -ic "$BROADEARN_WIN"
-  echo "=== Wipter setup complete ==="
+  echo "=== Broadearn setup complete ==="
   mkdir -p "$(dirname "$FLAG_FILE")"
   touch "$FLAG_FILE"
   return 0
 }
 
 echo "=== Starting Wipter... ==="
-/opt/Wipter/wipter-app &
-setup_wipter
+/opt/BroadEarn/broadearn &
+setup_broadearn

@@ -66,7 +66,7 @@ setup_broadearn() {
   local BROADEARN_WIN=""
   local attempts=0
   while [ -z "$BROADEARN_WIN" ] && [ $attempts -lt 30 ]; do
-    BROADEARN_INFO=$(wmctrl -l | grep -i "BroadEarn\|electron\|app")
+    BROADEARN_INFO=$(wmctrl -l | grep -i "BroadEarn")
     if [ -n "$BROADEARN_INFO" ]; then
       BROADEARN_WIN=$(echo "$BROADEARN_INFO" | head -n 1 | awk '{print $1}')
       break

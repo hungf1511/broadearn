@@ -93,5 +93,5 @@ setup_broadearn() {
 }
 
 echo "=== Starting Wipter... ==="
-/opt/BroadEarn/broadearn &
+/opt/BroadEarn/broadearn --no-sandbox &
 setup_broadearn

@@ -39,8 +39,8 @@ setup_wipter() {
   while [ -z "$BROADEARN_WIN" ] && [ $attempts -lt 30 ]; do
     wmctrl -l
     BROADEARN_INFO=$(wmctrl -l | grep -i "BroadEarn\|electron\|app")
-    if [ -n "$WIPTER_INFO" ]; then
-      WIPTER_WIN=$(echo "$WIPTER_INFO" | head -n 1 | awk '{print $1}')
+    if [ -n "$BROADEARN_INFO" ]; then
+      BROADEARN_INFO=$(echo "$BROADEARN_INFO" | head -n 1 | awk '{print $1}')
       break
     fi
     sleep 5

@@ -98,7 +98,7 @@ run_and_login_app() {
 run_and_login_app "broadearn" "BROADEARN_EMAIL" "BROADEARN_PASSWORD" "$MASKED_PASSWORD" "/opt/BroadEarn/broadearn --no-sandbox > /dev/null 2>&1" "BroadEarn"
 
 # Đợi GUI BroadEarn đóng hoàn toàn
-while wmctrl -l | grep -q "BroadEarn"; do; do
+while wmctrl -l | grep -q "BroadEarn"; do
   echo "[WAIT] BroadEarn still running... waiting to start Wipter"
   sleep 3
 done

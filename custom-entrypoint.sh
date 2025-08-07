@@ -1,17 +1,15 @@
 #!/bin/bash
 set -m
 
+# Ẩn mật khẩu khi echo
 MASKED_PASSWORD=$(printf '***%.0s' $(seq ${#BROADEARN_PASSWORD}))
 MASKED_WIPTER_PASSWORD=$(printf '***%.0s' $(seq ${#WIPTER_PASSWORD}))
 
-
-echo " "
-echo "=== === === === === === === ==="
+echo -e "\n=== === === === === === === ==="
 echo "Executing custom entrypoint ..."
-echo "=== === === === === === === ==="
-echo " "
+echo -e "=== === === === === === === ===\n"
 
-# Launch dbus and keyring
+# Khởi động D-Bus và Gnome keyring
 eval "$(dbus-launch --sh-syntax)"
 echo "$BROADEARN_PASSWORD" | gnome-keyring-daemon --unlock --replace
 
@@ -27,20 +25,14 @@ run_and_login_app() {
 
   echo "=== Starting $APP_NAME... ==="
   $EXECUTABLE --no-sandbox > /dev/null 2>&1 &
-  sleep 5
-
-  if [ -f "$FLAG_FILE" ]; then
-    echo "\n=== $APP_NAME setup already done; skipping ===\n"
-    return 0
-  fi
+  sleep 6
 
   if [ -z "${!EMAIL_VAR}" ] || [ -z "${!PASSWORD_VAR}" ]; then
-    echo "\n=== ${EMAIL_VAR} or ${PASSWORD_VAR} is missing ===\n"
+    echo "=== ${EMAIL_VAR} or ${PASSWORD_VAR} is missing ==="
     return 0
   fi
 
-  echo "\n=== Found login details. Starting login for $APP_NAME... ===\n"
-
+  echo "=== Looking for $APP_NAME window... ==="
   local APP_WIN=""
   local attempts=0
   while [ -z "$APP_WIN" ] && [ $attempts -lt 30 ]; do
@@ -49,42 +41,43 @@ run_and_login_app() {
       APP_WIN=$(echo "$APP_INFO" | head -n 1 | awk '{print $1}')
       break
     fi
-    sleep 5
+    sleep 2
     attempts=$((attempts+1))
   done
 
   if [ -z "$APP_WIN" ]; then
-    echo "\n=== $APP_NAME window not found after waiting. Exiting. ===\n"
-    return 0
+    echo "=== $APP_NAME window not found after waiting. Exiting. ==="
+    return 1
   fi
 
   wmctrl -ia "$APP_WIN"
-  sleep 6
+  sleep 4
 
-  # Gõ login
+  # Tự động gõ login
   if [ "$APP_NAME" == "broadearn" ]; then
-    xte "key Tab"; sleep 3
+    xte "key Tab"; sleep 2
     echo "=== Typing EMAIL: ${!EMAIL_VAR} ==="
-    xte "str ${!EMAIL_VAR}"; sleep 3
-    xte "key Tab"; sleep 3
+    xte "str ${!EMAIL_VAR}"; sleep 2
+    xte "key Tab"; sleep 2
     echo "=== Typing PASSWORD: $MASKED_PASSWORD ==="
-    xte "str ${!PASSWORD_VAR}"; sleep 3
+    xte "str ${!PASSWORD_VAR}"; sleep 2
+    xte "key Return"; sleep 3
+    xte "key Tab"; sleep 1; xte "key Tab"; sleep 1
+    xte "key Tab"; sleep 1; xte "key Tab"; sleep 1
     xte "key Return"; sleep 5
-    xte "key Tab"; sleep 3; xte "key Tab"; sleep 3
-    xte "key Tab"; sleep 3; xte "key Tab"; sleep 3
-    xte "key Return"; sleep 10
   else
-    xte "key Tab"; sleep 3
-    xte "key Tab"; sleep 3
-    xte "key Tab"; sleep 3
+    xte "key Tab"; sleep 1
+    xte "key Tab"; sleep 1
+    xte "key Tab"; sleep 1
     echo "=== Typing EMAIL: ${!EMAIL_VAR} ==="
-    xte "str ${!EMAIL_VAR}"; sleep 3
-    xte "key Tab"; sleep 3
+    xte "str ${!EMAIL_VAR}"; sleep 2
+    xte "key Tab"; sleep 2
     echo "=== Typing PASSWORD: $MASKED_PASSWORD ==="
-    xte "str ${!PASSWORD_VAR}"; sleep 3
-    xte "key Return"; sleep 10
+    xte "str ${!PASSWORD_VAR}"; sleep 2
+    xte "key Return"; sleep 6
   fi
 
+  # Chụp ảnh gửi Discord
   if [[ -n "$DISCORD_WEBHOOK_URL" && "$DISCORD_WEBHOOK_URL" =~ ^https://discord\.com/api/webhooks/ ]]; then
     HOSTNAME="$(hostname)"
     scrot -o -D "$DISPLAY" "$SCREENSHOT_PATH"
@@ -95,16 +88,21 @@ run_and_login_app() {
     echo "[INFO] Discord webhook not configured; skipping screenshot."
   fi
 
+  # Tắt GUI app
   wmctrl -ic "$APP_WIN"
-  echo "=== $APP_NAME setup complete ==="
-  mkdir -p "$(dirname "$FLAG_FILE")"
-  touch "$FLAG_FILE"
+  echo "=== $APP_NAME login complete ==="
   return 0
 }
 
-# Run BroadEarn
-run_and_login_app "broadearn" "BROADEARN_EMAIL" "BROADEARN_PASSWORD" "$MASKED_PASSWORD" "/opt/BroadEarn/broadearn --no-sandbox > /dev/null 2>&1" "BroadEarn"
+# Đăng nhập BroadEarn → gửi ảnh
+run_and_login_app "broadearn" "BROADEARN_EMAIL" "BROADEARN_PASSWORD" "$MASKED_PASSWORD" "/opt/BroadEarn/broadearn" "BroadEarn"
 
-# Wait a bit, then run Wipter
-sleep 5
+# Đợi GUI BroadEarn đóng hoàn toàn
+while pgrep -f "/opt/BroadEarn/broadearn" > /dev/null; do
+  echo "[WAIT] BroadEarn still running... waiting to start Wipter"
+  sleep 3
+done
+
+# Đăng nhập Wipter → gửi ảnh
 run_and_login_app "wipter" "WIPTER_EMAIL" "WIPTER_PASSWORD" "$MASKED_WIPTER_PASSWORD" "/opt/Wipter/wipter-app" "Wipter"
+

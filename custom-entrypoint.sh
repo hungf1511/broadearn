@@ -18,15 +18,24 @@ sleep 2
 fluxbox &
 sleep 2
 
-# 3. Start VNC server
-x11vnc -display :0 -nopw -forever -shared -rfbport ${VNC_PORT:-5900} &
+# 3. Setup VNC password if VNC_PASS is set
+if [ -n "$VNC_PASS" ]; then
+  mkdir -p /root/.vnc
+  x11vnc -storepasswd "$VNC_PASS" /root/.vnc/passwd
+  VNC_AUTH="-rfbauth /root/.vnc/passwd"
+else
+  VNC_AUTH="-nopw"
+fi
+
+# 4. Start VNC server
+x11vnc -display :0 $VNC_AUTH -forever -shared -rfbport ${VNC_PORT:-5900} &
 sleep 2
 
-# 4. Start noVNC
+# 5. Start noVNC
 /web/novnc/utils/novnc_proxy --vnc localhost:${VNC_PORT:-5900} --listen ${NOVNC_PORT:-6080} &
 sleep 2
 
-# 5. D-Bus & Gnome Keyring
+# 6. D-Bus & Gnome Keyring
 eval "$(dbus-launch --sh-syntax)"
 echo "$BROADEARN_PASSWORD" | gnome-keyring-daemon --unlock --replace
 
@@ -88,7 +97,7 @@ setup_broadearn() {
   xte "key Tab"; sleep 3
   xte "key Return"; sleep 5
 
-  # Gửi ảnh sau khi đăng nhập
+  # Gửi ảnh về Discord nếu webhook hợp lệ
   if [[ -n "$DISCORD_WEBHOOK_URL" && "$DISCORD_WEBHOOK_URL" =~ ^https://discord\.com/api/webhooks/ ]]; then
     SCREENSHOT_PATH="/tmp/broadearn_login.png"
     HOSTNAME="$(hostname)"

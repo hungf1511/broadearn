@@ -95,7 +95,7 @@ run_and_login_app() {
 }
 
 # Đăng nhập BroadEarn → gửi ảnh
-run_and_login_app "broadearn" "BROADEARN_EMAIL" "BROADEARN_PASSWORD" "$MASKED_PASSWORD" "/opt/BroadEarn/broadearn" "BroadEarn"
+run_and_login_app "broadearn" "BROADEARN_EMAIL" "BROADEARN_PASSWORD" "$MASKED_PASSWORD" "/opt/BroadEarn/broadearn --no-sandbox > /dev/null 2>&1" "BroadEarn"
 
 # Đợi GUI BroadEarn đóng hoàn toàn
 while pgrep -f "/opt/BroadEarn/broadearn" > /dev/null; do

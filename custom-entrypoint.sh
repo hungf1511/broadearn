@@ -61,7 +61,7 @@ run_and_login_app() {
     xte "key Tab"; sleep 2
     echo "=== Typing PASSWORD: $MASKED_PASSWORD ==="
     xte "str ${!PASSWORD_VAR}"; sleep 2
-    xte "key Return"; sleep 3
+    xte "key Return"; sleep 10
     xte "key Tab"; sleep 1; xte "key Tab"; sleep 1
     xte "key Tab"; sleep 1; xte "key Tab"; sleep 1
     xte "key Return"; sleep 5
